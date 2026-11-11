@@ -1,0 +1,73 @@
+Beskrivelse af softwaren
+
+Formål
+-------
+Programmet kører på en ATmega328PB med en klokfrekvens på 16 MHz. Det blinker
+en LED på PB1 og modtager tegn via UART0. Modtagne bogstaver skifter mellem
+stort og lille og sendes derefter tilbage til computeren.
+
+Opstart
+-------
+I main.c sættes PB1 som udgang. Timer1 startes med et interval på 500 ms.
+UART0 konfigureres til 9600 baud, 8 databits, ingen paritet og 1 stopbit.
+Programmet registrerer ConvertReceivedChar som tilbagekaldsfunktion for
+UART-modtagelsen og aktiverer derefter interrupts globalt.
+
+LED og Timer1
+------------
+Timer1 bruger CTC-tilstand og en præskaler på 256. Ved 16 MHz tæller timeren
+med 62.500 klokpulser pr. sekund. Sammenligningsværdien beregnes ud fra det
+ønskede interval. Hver gang Timer1 når sammenligningsværdien, udføres timerens
+interrupt-rutine, som skifter PB1 mellem høj og lav. LED'ens tilstand ændres
+derfor hver 500 ms, svarende til en hel tænd/sluk-cyklus på cirka 1 sekund.
+
+UART og tegnkonvertering
+-----------------------
+UART-driveren modtager tegn ved hjælp af et interrupt, så hovedprogrammet ikke
+behøver at vente på input. Modtagerutinen læser tegnet og kalder den
+registrerede funktion. ConvertReceivedChar ændrer kun bogstaver fra A til Z
+eller a til z. Funktionen bruger XOR med værdien 0x20 til at skifte mellem
+stort og lille bogstav. Tal, mellemrum og tegnsætning ændres ikke. Det
+konverterede tegn sendes derefter tilbage via UART, så det kan ses i
+computerens serielle terminal.
+
+Hovedprogram
+------------
+Efter initialiseringen venter programmet i en tom while-løkke. Timer- og
+UART-arbejdet udføres asynkront i deres interrupt-rutiner. Den serielle
+terminal skal være indstillet til 9600 baud og 8N1.
+
+
+Opgave 2
+--------
+
+Clock og UART
+-------------
+CPU-clocken på det testede board er cirka 8 MHz. F_CPU er derfor sat til
+8.000.000 Hz i ProjectDefines.h. Både UART0 og UART1 bruger 9600 baud og 8N1
+(8 databits, ingen paritet, 1 stopbit). UART0 modtager og sender. UART1
+sender via PB3/TXD1 til RXD på CP2102, som har fælles GND med boardet.
+
+Timer1 og sekundtælleren
+-----------------------
+Timer1 kører i CTC-tilstand med en præskaler på 256. Ved 8 MHz får timeren
+31.250 tik pr. sekund. OCR1A er derfor 31.249, fordi timeren tæller fra 0.
+Hvert sekund skifter interrupt-rutinen LED'ens tilstand på PB1 og sætter
+timer_second_flag. Main-løkken nulstiller flaget atomisk, øger tælleren
+og lægger linjen "Sekunder efter opstart: 1" i UART1's sendekø. Næste
+gang skrives 2 osv. Interrupt-rutinen håndterer kun LED'en og flaget.
+
+Modtagelse og videresendelse
+----------------------------
+Main-løkken tjekker, om der er et tegn klar på UART0. Bogstaverne A-Z og
+a-z får skiftet mellem stort og lille. Tal, mellemrum og tegnsætning
+sendes videre uændret. Main-løkken sender tegnet tilbage på UART0 og
+lægger det også i UART1's sendekø. UART1 får ét tegn ad gangen, når dens
+senderegister er ledigt. Dermed kan main-løkken stadig læse UART0, mens
+UART1 sender en sekundlinje.
+
+Prøve i Serial Monitor
+----------------------
+Vælg CP2102's port (COM13 på denne PC) og 9600 baud, 8N1. Efter opstart
+skal tælleren stige med én pr. sekund. Send f.eks. "Hej 123!" på UART0
+med linjeskift. "hEJ 123!" skal kunne ses på begge porte.
