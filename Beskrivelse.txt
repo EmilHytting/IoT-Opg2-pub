@@ -50,24 +50,24 @@ sender via PB3/TXD1 til RXD på CP2102, som har fælles GND med boardet.
 
 Timer1 og sekundtælleren
 -----------------------
-Timer1 kører i CTC-tilstand med en præskaler på 256. Ved 8 MHz får timeren
+Timer1 kører i CTC tilstand med en præskaler på 256. Ved 8 MHz får timeren
 31.250 tik pr. sekund. OCR1A er derfor 31.249, fordi timeren tæller fra 0.
-Hvert sekund skifter interrupt-rutinen LED'ens tilstand på PB1 og sætter
+Hvert sekund skifter interrupt rutinen LED'ens tilstand på PB1 og sætter
 timer_second_flag. Main-løkken nulstiller flaget atomisk, øger tælleren
 og lægger linjen "Sekunder efter opstart: 1" i UART1's sendekø. Næste
 gang skrives 2 osv. Interrupt-rutinen håndterer kun LED'en og flaget.
 
 Modtagelse og videresendelse
 ----------------------------
-Main-løkken tjekker, om der er et tegn klar på UART0. Bogstaverne A-Z og
+Main løkken tjekker, om der er et tegn klar på UART0. Bogstaverne A-Z og
 a-z får skiftet mellem stort og lille. Tal, mellemrum og tegnsætning
-sendes videre uændret. Main-løkken sender tegnet tilbage på UART0 og
+sendes videre uændret. Main løkken sender tegnet tilbage på UART0 og
 lægger det også i UART1's sendekø. UART1 får ét tegn ad gangen, når dens
 senderegister er ledigt. Dermed kan main-løkken stadig læse UART0, mens
 UART1 sender en sekundlinje.
 
 Prøve i Serial Monitor
 ----------------------
-Vælg CP2102's port (COM13 på denne PC) og 9600 baud, 8N1. Efter opstart
+Vælg CP2102's port (COM13 på min PC) og 9600 baud, 8N1. Efter opstart
 skal tælleren stige med én pr. sekund. Send f.eks. "Hej 123!" på UART0
 med linjeskift. "hEJ 123!" skal kunne ses på begge porte.
